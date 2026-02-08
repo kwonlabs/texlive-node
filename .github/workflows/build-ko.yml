@@ -22,44 +22,44 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-      should_run: ${{ steps.set-matrix.outputs.should_run }}
+      node_version: ${{ steps.set-version.outputs.node_version }}
+      texlive_version: ${{ steps.set-version.outputs.texlive_version }}
+      should_run: ${{ steps.set-version.outputs.should_run }}
     steps:
       - uses: actions/checkout@v4
-      - id: set-matrix
+      - id: set-version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            MATRIX_ITEMS="[{\"node-version\": \"${{ github.event.inputs.node-version }}\", \"texlive-version\": \"${{ github.event.inputs.texlive-version }}\"}]"
+            echo "node_version=${{ github.event.inputs.node-version }}" >> $GITHUB_OUTPUT
+            echo "texlive_version=${{ github.event.inputs.texlive-version }}" >> $GITHUB_OUTPUT
             echo "should_run=true" >> $GITHUB_OUTPUT
-            echo "matrix=$MATRIX_ITEMS" >> $GITHUB_OUTPUT
           else
-             # Logic for schedule: build all in node-versions.txt
-             NODES=$(cat node-versions.txt | grep -v '^#' || true)
+             # Logic for schedule: build latest LTS
+             LATEST_LTS=$(curl -s https://nodejs.org/dist/index.json | jq -r '[.[] | select(.lts != false)][0].version' | sed 's/^v//')
+             
              TL_VER="latest"
              if [ -f texlive-versions.txt ]; then
                 TL_VER=$(cat texlive-versions.txt | grep -v '^#' | head -n 1 || echo "latest")
              fi
 
-             MATRIX_ITEMS="[]"
-             for node in $NODES; do
-               TAG="${TL_VER}-${node}-ko"
-               BASE_TAG="${TL_VER}-${node}"
-               
-               # Check if KO missing AND BASE exists
-               HTTP_KO=$(curl -s -L -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}/tags/$TAG/")
-               HTTP_BASE=$(curl -s -L -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}/tags/$BASE_TAG/")
+             if [ -z "$LATEST_LTS" ]; then
+                echo "::error::Could not find latest Node.js LTS"
+                exit 1
+             fi
 
-               if [ "$HTTP_KO" -ne 200 ] && [ "$HTTP_BASE" -eq 200 ]; then
-                 MATRIX_ITEMS=$(echo $MATRIX_ITEMS | jq -c ". + [{\"node-version\": \"$node\", \"texlive-version\": \"$TL_VER\"}]")
-               fi
-             done
+             TAG="${TL_VER}-${LATEST_LTS}-ko"
+             BASE_TAG="${TL_VER}-${LATEST_LTS}"
+             
+             # Check if KO missing AND BASE exists
+             HTTP_KO=$(curl -s -L -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}/tags/$TAG/")
+             HTTP_BASE=$(curl -s -L -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}/tags/$BASE_TAG/")
 
-             LEN=$(echo $MATRIX_ITEMS | jq 'length')
-             if [ "$LEN" -eq 0 ]; then
-               echo "should_run=false" >> $GITHUB_OUTPUT
-             else
+             if [ "$HTTP_KO" -ne 200 ] && [ "$HTTP_BASE" -eq 200 ]; then
+               echo "node_version=$LATEST_LTS" >> $GITHUB_OUTPUT
+               echo "texlive_version=$TL_VER" >> $GITHUB_OUTPUT
                echo "should_run=true" >> $GITHUB_OUTPUT
-               echo "matrix=$MATRIX_ITEMS" >> $GITHUB_OUTPUT
+             else
+               echo "should_run=false" >> $GITHUB_OUTPUT
              fi
           fi
 
@@ -67,10 +67,6 @@ jobs:
     needs: setup
     if: needs.setup.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include: ${{ fromJson(needs.setup.outputs.matrix) }}
-      fail-fast: false
     steps:
       - uses: actions/checkout@v4
       - name: Login to Docker Hub
@@ -80,6 +76,6 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build and push KO
         run: |
-          IMAGE_NAME="${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}" ./build-ko.sh ${{ matrix.node-version }} ${{ matrix.texlive-version }} --force
-          TAG="${{ matrix.texlive-version }}-${{ matrix.node-version }}-ko"
+          IMAGE_NAME="${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}" ./build-ko.sh ${{ needs.setup.outputs.node_version }} ${{ needs.setup.outputs.texlive_version }} --force
+          TAG="${{ needs.setup.outputs.texlive_version }}-${{ needs.setup.outputs.node_version }}-ko"
           docker push ${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:$TAG
