@@ -7,8 +7,9 @@
 # ==============================================================================
 
 # BASE_IMAGE_TAG passed at build time (e.g., TL2024-20.20.0)
+ARG BASE_IMAGE_NAME=texlive-node
 ARG BASE_IMAGE_TAG
-FROM texlive-node:${BASE_IMAGE_TAG} AS korean
+FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG} AS korean
 
 # 1. Install System Fonts & Utilities
 # Includes Nanum, Baekmuk, Un-fonts, and Noto families

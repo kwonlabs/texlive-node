@@ -80,6 +80,6 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build and push KO
         run: |
-          ./build-ko.sh ${{ matrix.node-version }} ${{ matrix.texlive-version }} --force
+          IMAGE_NAME="${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}" ./build-ko.sh ${{ matrix.node-version }} ${{ matrix.texlive-version }} --force
           TAG="${{ matrix.texlive-version }}-${{ matrix.node-version }}-ko"
           docker push ${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:$TAG

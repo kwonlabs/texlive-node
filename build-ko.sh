@@ -3,6 +3,7 @@ set -e
 
 # Configuration
 TEXLIVE_VERSION=${TEXLIVE_VERSION:-latest}
+IMAGE_NAME=${IMAGE_NAME:-texlive-node}
 
 # Function to check if version $1 >= $2 (Node.js)
 version_ge() {
@@ -116,15 +117,16 @@ for node_ver in "${NODE_VERSIONS[@]}"; do
     KO_TAG="${BASE_TAG}-ko"
     
     echo ""
-    echo ">> Building Korean Image: texlive-node:${KO_TAG}"
-    echo "   (FROM texlive-node:${BASE_TAG})"
+    echo ">> Building Korean Image: ${IMAGE_NAME}:${KO_TAG}"
+    echo "   (FROM ${IMAGE_NAME}:${BASE_TAG})"
     
     docker build \
         -f images/ko/Dockerfile \
         --build-arg BASE_IMAGE_TAG=${BASE_TAG} \
-        -t texlive-node:${KO_TAG} .
+        --build-arg BASE_IMAGE_NAME=${IMAGE_NAME} \
+        -t ${IMAGE_NAME}:${KO_TAG} .
         
-    echo "   ✅ Korean Built: texlive-node:${KO_TAG}"
+    echo "   ✅ Korean Built: ${IMAGE_NAME}:${KO_TAG}"
 done
 
 echo ""

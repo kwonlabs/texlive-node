@@ -3,6 +3,7 @@ set -e
 
 # Configuration
 TEXLIVE_VERSION=${TEXLIVE_VERSION:-latest}
+IMAGE_NAME=${IMAGE_NAME:-texlive-node}
 
 # Function to check if version $1 >= $2 (Node.js)
 version_ge() {
@@ -115,15 +116,15 @@ for node_ver in "${NODE_VERSIONS[@]}"; do
     BASE_TAG="${TEXLIVE_VERSION}-${node_ver}"
     
     echo ""
-    echo ">> Building Base Image: texlive-node:${BASE_TAG}"
+    echo ">> Building Base Image: ${IMAGE_NAME}:${BASE_TAG}"
     
     docker build \
         -f images/base/Dockerfile \
         --build-arg TEXLIVE_VERSION=${TEXLIVE_VERSION} \
         --build-arg NODE_VERSION=${node_ver} \
-        -t texlive-node:${BASE_TAG} .
+        -t ${IMAGE_NAME}:${BASE_TAG} .
     
-    echo "   ✅ Base Built: texlive-node:${BASE_TAG}"
+    echo "   ✅ Base Built: ${IMAGE_NAME}:${BASE_TAG}"
 done
 
 echo ""
