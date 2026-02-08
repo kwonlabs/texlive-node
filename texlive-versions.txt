@@ -1,0 +1,3 @@
+# List minimum required TeXLive years here (e.g., TL2024-historic)
+# If empty or missing, it will default to latest.
+# latest

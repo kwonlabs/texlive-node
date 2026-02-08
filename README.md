@@ -1,0 +1,51 @@
+# texlive-node
+
+Optimized Docker image combining TeXLive, Node.js, and Korean fonts with smart version management.
+
+## 📦 Images
+
+### Docker Hub
+Pull the image directly:
+```bash
+docker pull makye/texlive-node:TL2024-historic-24.13.0-ko
+```
+
+### 1. Base Image
+Integrates TeXLive's core functionality with a Node.js environment.
+- **Image Tag Pattern**: `${DOCKER_ORG}/texlive-node:<texlive-version>-<node-version>`
+- **Core Strategy**: 
+  - **Base Source**: Strictly uses `texlive/texlive:TL{YYYY}-historic` tags (No `latest` fallback).
+  - **Runtime**: Multiple Node.js versions supported (v20, v22, v24+)
+
+### 2. Korean Support Image
+An extended image adding essential packages and fonts for Korean rendering.
+- **Tag Suffix**: `-ko`
+- **Additions**:
+  1.  **TeX Packages (via `tlmgr`)**: `kotex`, `cjk-ko`, `xetexko`, etc.
+  2.  **System Fonts**: Nanum, Noto Sans CJK, Baekmuk, UnFonts.
+  3.  **Custom Fonts**:
+      - [NanumSquare Neo](https://github.com/moonspam/NanumSquareNeo)
+      - [Pretendard](https://github.com/orioncactus/pretendard)
+      - [Inter](https://github.com/rsms/inter)
+
+## 🚀 Build & CI Strategy
+
+The project uses a **Decoupled CI** architecture to allow independent builds and maximum flexibility.
+
+### 1. Decoupled Workflows
+- **[Build Base Image](.github/workflows/build-base.yml)**: 
+  - Automatically discovers Node.js patches and builds the base TeXLive + Node environment.
+  - Pushes to `${DOCKER_ORG}/texlive-node:<tl>-<node>`.
+- **[Build Korean Image](.github/workflows/build-ko.yml)**:
+  - Specifically handles the Korean font and package integration.
+  - **Dependency Detection**: Automatically checks if the required Base image exists on Docker Hub before starting. This allows building `ko` images independently.
+
+### 2. TeXLive Versioning (Smart Discovery)
+- **Default**: The system defaults to the `latest` official TeXLive image.
+- **Stable Pinning**: If you need a specific year, add it to `texlive-versions.txt` (e.g., `TL2024-historic`).
+- **Discovery**: In automated weekly runs, the system targets the version defined in your config (or `latest` if empty).
+
+### 3. Manual Build (Workflow Dispatch)
+- Manually trigger any version combination via the GitHub Actions UI.
+- Local developers can use the `--force` flag with `build-base.sh` or `build-ko.sh` to bypass baseline checks.
+
