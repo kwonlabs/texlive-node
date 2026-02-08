@@ -25,18 +25,20 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Custom Fonts (Pretendard, Inter)
+# 2. Install Custom Fonts (Pretendard, Inter, NanumSquareNeo)
 RUN mkdir -p /usr/share/fonts/truetype/pretendard && \
-    curl -L https://github.com/orioncactus/pretendard/releases/download/v1.3.9/Pretendard-1.3.9.zip -o pretendard.zip && \
-    unzip pretendard.zip -d /usr/share/fonts/truetype/pretendard && \
-    rm pretendard.zip && \
-    mkdir -p /usr/share/fonts/truetype/inter && \
-    curl -L https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip -o inter.zip && \
-    unzip inter.zip -d /usr/share/fonts/truetype/inter && \
-    rm inter.zip && \
-    mkdir -p /usr/share/fonts/truetype/nanumsquareneo && \
-    curl -L https://github.com/moonspam/NanumSquareNeo/releases/download/v1.0.0/NanumSquareNeo_TTF.zip -o nanumsquareneo.zip && \
-    unzip nanumsquareneo.zip -d /usr/share/fonts/truetype/nanumsquareneo && \
+    curl -fSL https://github.com/orioncactus/pretendard/releases/download/v1.3.9/Pretendard-1.3.9.zip -o pretendard.zip && \
+    unzip -q pretendard.zip -d /usr/share/fonts/truetype/pretendard && \
+    rm pretendard.zip
+
+RUN mkdir -p /usr/share/fonts/truetype/inter && \
+    curl -fSL https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip -o inter.zip && \
+    unzip -q inter.zip -d /usr/share/fonts/truetype/inter && \
+    rm inter.zip
+
+RUN mkdir -p /usr/share/fonts/truetype/nanumsquareneo && \
+    curl -fSL https://github.com/moonspam/NanumSquareNeo/archive/refs/tags/v1.0.0.zip -o nanumsquareneo.zip && \
+    unzip -q nanumsquareneo.zip -d /usr/share/fonts/truetype/nanumsquareneo && \
     rm nanumsquareneo.zip
 
 # 3. Install TeX Packages (tlmgr)
