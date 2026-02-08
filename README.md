@@ -14,8 +14,8 @@ docker pull makye/texlive-node:TL2024-historic-24.13.0-ko
 Integrates TeXLive's core functionality with a Node.js environment.
 - **Image Tag Pattern**: `${DOCKER_ORG}/texlive-node:<texlive-version>-<node-version>`
 - **Core Strategy**: 
-  - **Base Source**: Strictly uses `texlive/texlive:TL{YYYY}-historic` tags (No `latest` fallback).
-  - **Runtime**: Multiple Node.js versions supported (v20, v22, v24+)
+  - **Base Source**: Defaults to `texlive/texlive:latest`. Custom year versions (e.g., `TL2024-historic`) can be pinned if needed.
+  - **Runtime**: Node.js **v24.13.0+** (Modern LTS and higher).
 
 ### 2. Korean Support Image
 An extended image adding essential packages and fonts for Korean rendering.

@@ -5,11 +5,11 @@
 ## 📦 이미지 종류 (Images)
 
 ### 1. 기본 이미지 (Base Image)
-TeXLive의 핵심 기능과 Node.js 환경이 통합된 이미지입니다.
-- **이미지 태그**: `${DOCKER_ORG}/texlive-node:<texlive-version>-<node-version>`
-- **구성**:
-  - **Base Source**: `texlive/texlive:TL{YYYY}-historic` (항상 특정 연도의 최종 고정 버전 사용. `latest` 미사용)
-  - **Runtime**: Node.js v20, v22, v24 이상의 다양한 버전 지원
+TeXLive의 기본 기능과 Node.js 환경이 통합된 이미지입니다.
+- **이미지 태그 패턴**: `${DOCKER_ORG}/texlive-node:<texlive-version>-<node-version>`
+- **핵심 전략**:
+  - **베이스 소스**: 공식 `texlive/texlive:latest`를 기본으로 사용합니다. 필요시 `TL2024-historic` 등 특정 연도 버전 고정이 가능합니다.
+  - **런타임**: Node.js **v24.13.0+** 최신 환경을 지원합니다.
 
 ### 2. 한국어 지원 이미지 (Korean Support Image)
 기본 이미지 위에 한국어 렌더링을 위한 필수 패키지와 최신 폰트가 추가되었습니다.
