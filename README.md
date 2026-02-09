@@ -15,7 +15,7 @@ Integrates TeXLive's core functionality with a Node.js environment.
 - **Image Tag Pattern**: `${DOCKER_ORG}/texlive-node:<texlive-version>-<node-version>`
 - **Core Strategy**: 
   - **Base Source**: Defaults to `texlive/texlive:latest`. Custom year versions (e.g., `TL2024-historic`) can be pinned if needed.
-  - **Runtime**: Node.js **v24.13.0+** (Modern LTS and higher).
+  - **Runtime**: Node.js **Latest Stable LTS** (v24.13.0+).
 
 ### 2. Korean Support Image
 An extended image adding essential packages and fonts for Korean rendering.
@@ -34,7 +34,7 @@ The project uses a **Decoupled CI** architecture to allow independent builds and
 
 ### 1. Decoupled Workflows
 - **[Build Base Image](.github/workflows/build-base.yml)**: 
-  - Automatically discovers Node.js patches and builds the base TeXLive + Node environment.
+  - Automatically discovers the single latest Node.js LTS release and builds the foundational environment.
   - Pushes to `${DOCKER_ORG}/texlive-node:<tl>-<node>`.
 - **[Build Korean Image](.github/workflows/build-ko.yml)**:
   - Specifically handles the Korean font and package integration.
@@ -43,7 +43,7 @@ The project uses a **Decoupled CI** architecture to allow independent builds and
 ### 2. TeXLive Versioning (Smart Discovery)
 - **Default**: The system defaults to the `latest` official TeXLive image.
 - **Stable Pinning**: If you need a specific year, add it to `texlive-versions.txt` (e.g., `TL2024-historic`).
-- **Discovery**: In automated weekly runs, the system targets the version defined in your config (or `latest` if empty).
+- **Discovery**: In automated weekly runs, the system targets the single latest LTS version and the configured TeXLive version (or `latest` if empty).
 
 ### 3. Manual Build (Workflow Dispatch)
 - Manually trigger any version combination via the GitHub Actions UI.
