@@ -35,10 +35,30 @@ texlive_ge() {
     fi
 }
 
-# Check if --force is passed
+# Argument Parsing
 FORCE_BUILD=false
-for arg in "$@"; do
-  if [ "$arg" = "--force" ]; then FORCE_BUILD=true; fi
+REQUIRED_NODE=""
+REQUIRED_TL=""
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --force)
+      FORCE_BUILD=true
+      shift
+      ;;
+    -*)
+      echo "⚠️  Unknown option: $1" >&2
+      shift
+      ;;
+    *)
+      if [ -z "$REQUIRED_NODE" ]; then
+        REQUIRED_NODE="$1"
+      elif [ -z "$REQUIRED_TL" ]; then
+        REQUIRED_TL="$1"
+      fi
+      shift
+      ;;
+  esac
 done
 
 # Function to get versions to build
@@ -83,7 +103,7 @@ get_versions() {
 }
 
 # 1. Determine Node.js versions to build
-NODE_VERSIONS=($(get_versions "$1"))
+NODE_VERSIONS=($(get_versions "$REQUIRED_NODE"))
 
 if [ "${#NODE_VERSIONS[@]}" -eq 0 ] && [ "$FORCE_BUILD" = false ]; then
   echo "⚠️  No Node.js versions to build based on criteria. Use --force to override." >&2
@@ -91,7 +111,7 @@ if [ "${#NODE_VERSIONS[@]}" -eq 0 ] && [ "$FORCE_BUILD" = false ]; then
 fi
 
 # 2. Check TeXLive Version (if provided or default)
-TEXLIVE_VERSION="${2:-latest}"
+TEXLIVE_VERSION="${REQUIRED_TL:-latest}"
 
 if [ -f texlive-versions.txt ]; then
   REQUIRED_TL=$(cat texlive-versions.txt | grep -v '^#' | head -n 1 || true)

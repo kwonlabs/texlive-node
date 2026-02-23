@@ -76,5 +76,5 @@ jobs:
       - name: Build and push Base
         run: |
           IMAGE_NAME="${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}" ./build-base.sh ${{ needs.setup.outputs.node_version }} ${{ needs.setup.outputs.texlive_version }} --force
-          TAG="${{ needs.setup.outputs.texlive_version }}-${{ needs.setup.outputs.node_version }}"
+          TAG="${{ needs.setup.outputs.texlive_version || 'latest' }}-${{ needs.setup.outputs.node_version }}"
           docker push ${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:$TAG

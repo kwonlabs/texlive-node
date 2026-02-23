@@ -77,5 +77,5 @@ jobs:
       - name: Build and push KO
         run: |
           IMAGE_NAME="${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}" ./build-ko.sh ${{ needs.setup.outputs.node_version }} ${{ needs.setup.outputs.texlive_version }} --force
-          TAG="${{ needs.setup.outputs.texlive_version }}-${{ needs.setup.outputs.node_version }}-ko"
+          TAG="${{ needs.setup.outputs.texlive_version || 'latest' }}-${{ needs.setup.outputs.node_version }}-ko"
           docker push ${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:$TAG
