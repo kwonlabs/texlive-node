@@ -1,0 +1,138 @@
+name: Build and Publish Images
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Weekly at midnight
+  workflow_dispatch:
+    inputs:
+      node-version:
+        description: 'Node.js version'
+        required: true
+        default: '24.13.0'
+      texlive-version:
+        description: 'TeXLive version (latest or TL2024-historic)'
+        required: true
+        default: 'latest'
+
+env:
+  DOCKER_ORG: makye
+  IMAGE_NAME: texlive-node
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      node_version: ${{ steps.set-version.outputs.node_version }}
+      texlive_version: ${{ steps.set-version.outputs.texlive_version }}
+      run_base: ${{ steps.set-version.outputs.run_base }}
+      run_ko: ${{ steps.set-version.outputs.run_ko }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: set-version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "node_version=${{ github.event.inputs.node-version }}" >> $GITHUB_OUTPUT
+            echo "texlive_version=${{ github.event.inputs.texlive-version }}" >> $GITHUB_OUTPUT
+            echo "run_base=true" >> $GITHUB_OUTPUT
+            echo "run_ko=true" >> $GITHUB_OUTPUT
+          else
+             # 1. Fetch latest Node.js LTS release
+             LATEST_LTS=$(curl -s https://nodejs.org/dist/index.json | jq -r '[.[] | select(.lts != false)][0].version' | sed 's/^v//')
+             
+             # 2. TeXLive version
+             TL_VER="latest"
+             if [ -f texlive-versions.txt ]; then
+                TL_VER=$(cat texlive-versions.txt | grep -v '^#' | head -n 1 || echo "latest")
+             fi
+
+             if [ -z "$LATEST_LTS" ]; then
+                echo "::error::Could not find latest Node.js LTS"
+                exit 1
+             fi
+
+             BASE_TAG="${TL_VER}-${LATEST_LTS}"
+             KO_TAG="${TL_VER}-${LATEST_LTS}-ko"
+             
+             # 3. Check targets on Docker Hub (If missing, we need to build)
+             HTTP_BASE=$(curl -s -L -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}/tags/$BASE_TAG/")
+             HTTP_KO=$(curl -s -L -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}/tags/$KO_TAG/")
+             
+             RUN_B=false
+             RUN_K=false
+
+             if [ "$HTTP_BASE" -ne 200 ]; then RUN_B=true; fi
+             if [ "$HTTP_KO" -ne 200 ]; then RUN_K=true; fi
+
+             echo "node_version=$LATEST_LTS" >> $GITHUB_OUTPUT
+             echo "texlive_version=$TL_VER" >> $GITHUB_OUTPUT
+             echo "run_base=$RUN_B" >> $GITHUB_OUTPUT
+             echo "run_ko=$RUN_K" >> $GITHUB_OUTPUT
+             
+             echo "Determined: Base=$RUN_B, KO=$RUN_K for $LATEST_LTS"
+          fi
+
+  build-base:
+    needs: setup
+    if: needs.setup.outputs.run_base == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push base
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./images/base/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+             TEXLIVE_VERSION=${{ needs.setup.outputs.texlive_version }}
+             NODE_VERSION=${{ needs.setup.outputs.node_version }}
+          tags: |
+             ${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:${{ needs.setup.outputs.texlive_version }}-${{ needs.setup.outputs.node_version }}
+             ${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:latest-${{ needs.setup.outputs.node_version }}
+          cache-from: type=gha,scope=build-base
+          cache-to: type=gha,mode=max,scope=build-base
+
+  build-ko:
+    needs: [setup, build-base]
+    # Run if run_ko is true AND (build-base was skipped OR build-base succeeded)
+    if: |
+      always() &&
+      needs.setup.outputs.run_ko == 'true' &&
+      (needs.build-base.result == 'success' || needs.build-base.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push ko
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./images/ko/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+             BASE_IMAGE_NAME=${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}
+             BASE_IMAGE_TAG=${{ needs.setup.outputs.texlive_version }}-${{ needs.setup.outputs.node_version }}
+          tags: ${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:${{ needs.setup.outputs.texlive_version }}-${{ needs.setup.outputs.node_version }}-ko
+          cache-from: type=gha,scope=build-ko
+          cache-to: type=gha,mode=max,scope=build-ko

@@ -1,6 +1,6 @@
 # texlive-node
 
-Optimized Docker image combining TeXLive, Node.js, and Korean fonts with smart version management.
+Optimized multi-architecture (`amd64`, `arm64`) Docker image combining TeXLive, Node.js, and Korean fonts with smart version management.
 
 ## 📦 Images
 
@@ -30,15 +30,15 @@ An extended image adding essential packages and fonts for Korean rendering.
 
 ## 🚀 Build & CI Strategy
 
-The project uses a **Decoupled CI** architecture to allow independent builds and maximum flexibility.
+The project uses a unified **CI Architecture** to efficiently build and publish multi-architecture Docker images (`linux/amd64`, `linux/arm64`).
 
-### 1. Decoupled Workflows
-- **[Build Base Image](.github/workflows/build-base.yml)**: 
-  - Automatically discovers the single latest Node.js LTS release and builds the foundational environment.
-  - Pushes to `${DOCKER_ORG}/texlive-node:<tl>-<node>`.
-- **[Build Korean Image](.github/workflows/build-ko.yml)**:
-  - Specifically handles the Korean font and package integration.
-  - **Dependency Detection**: Automatically checks if the required Base image exists on Docker Hub before starting. This allows building `ko` images independently.
+### 1. Unified Workflow
+- **[Build & Publish Images](.github/workflows/build.yml)**: 
+  - Automatically discovers the single latest Node.js LTS release.
+  - Checks if the images are already built on Docker Hub to skip unnecessary builds.
+  - Builds the foundational environment (Base image) via Docker Buildx/QEMU and pushes it.
+  - Sequentially builds the Korean image relying on the newly published Base image and pushes it.
+  - Leverages GitHub Actions caching (`type=gha`) for fast, optimized rebuilds.
 
 ### 2. TeXLive Versioning (Smart Discovery)
 - **Default**: The system defaults to the `latest` official TeXLive image.

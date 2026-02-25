@@ -136,10 +136,11 @@ for node_ver in "${NODE_VERSIONS[@]}"; do
     BASE_TAG="${TEXLIVE_VERSION}-${node_ver}"
     
     echo ""
-    echo ">> Building Base Image: ${IMAGE_NAME}:${BASE_TAG}"
+    echo ">> Building Base Image: ${IMAGE_NAME}:${BASE_TAG} (Multi-arch via buildx)"
     
-    docker build \
+    docker buildx build \
         -f images/base/Dockerfile \
+        --platform linux/amd64,linux/arm64 \
         --build-arg TEXLIVE_VERSION=${TEXLIVE_VERSION} \
         --build-arg NODE_VERSION=${node_ver} \
         -t ${IMAGE_NAME}:${BASE_TAG} .

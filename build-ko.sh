@@ -137,11 +137,12 @@ for node_ver in "${NODE_VERSIONS[@]}"; do
     KO_TAG="${BASE_TAG}-ko"
     
     echo ""
-    echo ">> Building Korean Image: ${IMAGE_NAME}:${KO_TAG}"
+    echo ">> Building Korean Image: ${IMAGE_NAME}:${KO_TAG} (Multi-arch via buildx)"
     echo "   (FROM ${IMAGE_NAME}:${BASE_TAG})"
     
-    docker build \
+    docker buildx build \
         -f images/ko/Dockerfile \
+        --platform linux/amd64,linux/arm64 \
         --build-arg BASE_IMAGE_TAG=${BASE_TAG} \
         --build-arg BASE_IMAGE_NAME=${IMAGE_NAME} \
         -t ${IMAGE_NAME}:${KO_TAG} .

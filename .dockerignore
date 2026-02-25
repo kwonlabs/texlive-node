@@ -1,7 +1,8 @@
-.git
-node_modules
-.github
-*.sh
+.git/
+.github/
+node_modules/
+images/
 README*
+*.sh
 *.md
-images/base
+*-versions.txt
