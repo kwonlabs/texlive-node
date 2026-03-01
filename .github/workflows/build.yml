@@ -42,7 +42,8 @@ jobs:
              # 2. TeXLive version
              TL_VER="latest"
              if [ -f texlive-versions.txt ]; then
-                TL_VER=$(cat texlive-versions.txt | grep -v '^#' | head -n 1 || echo "latest")
+                TL_VER=$(grep -vE '^(#|$)' texlive-versions.txt | head -n 1 | xargs)
+                : "${TL_VER:=latest}"
              fi
 
              if [ -z "$LATEST_LTS" ]; then
