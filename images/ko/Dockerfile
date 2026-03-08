@@ -43,12 +43,29 @@ RUN mkdir -p /usr/share/fonts/truetype/nanumsquareneo && \
 
 # 3. Install TeX Packages (tlmgr)
 # Core Korean support via collection-langkorean
-RUN tlmgr update --self && \
+# Automatically pin repository by local TeX Live year to avoid yearly rollover failures.
+RUN set -eux; \
+    TL_YEAR="$(tlmgr --version | grep -Eo 'TeX Live [0-9]{4}' | awk '{print $3}' | head -n1)"; \
+    CURRENT_YEAR="$(date +%Y)"; \
+    if [ -z "${TL_YEAR}" ]; then \
+      echo "Failed to detect local TeX Live year"; \
+      exit 1; \
+    fi; \
+    if [ "${TL_YEAR}" -lt "${CURRENT_YEAR}" ]; then \
+      TL_REPO="https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/${TL_YEAR}/tlnet-final"; \
+      echo "Using historic TeX Live repository: ${TL_REPO}"; \
+      tlmgr option repository "${TL_REPO}"; \
+    else \
+      TL_REPO="https://mirror.ctan.org/systems/texlive/tlnet"; \
+      echo "Using current TeX Live repository: ${TL_REPO}"; \
+      tlmgr option repository "${TL_REPO}"; \
+      tlmgr update --self; \
+    fi; \
     tlmgr install \
-    collection-langkorean \
-    baekmuk \
-    unfonts-core \
-    unfonts-extra && \
+      collection-langkorean \
+      baekmuk \
+      unfonts-core \
+      unfonts-extra; \
     tlmgr path add
 
 # 4. Update Font Maps
