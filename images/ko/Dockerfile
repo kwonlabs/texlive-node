@@ -45,7 +45,12 @@ RUN mkdir -p /usr/share/fonts/truetype/nanumsquareneo && \
 # Core Korean support via collection-langkorean
 # Automatically pin repository by local TeX Live year to avoid yearly rollover failures.
 RUN set -eux; \
-    TL_YEAR="$(tlmgr --version | grep -Eo 'TeX Live [0-9]{4}' | awk '{print $3}' | head -n1)"; \
+    TL_YEAR="$(tlmgr --version | sed -n \
+      -e 's|.*installation: .*/\([0-9][0-9][0-9][0-9]\)$|\1|p' \
+      -e 's|.*version \([0-9][0-9][0-9][0-9]\)$|\1|p' | head -n1)"; \
+    if [ -z "${TL_YEAR}" ]; then \
+      TL_YEAR="$(kpsewhich -var-value=TEXDIR 2>/dev/null | sed -n 's|.*/\([0-9][0-9][0-9][0-9]\)$|\1|p' | head -n1)"; \
+    fi; \
     CURRENT_YEAR="$(date +%Y)"; \
     if [ -z "${TL_YEAR}" ]; then \
       echo "Failed to detect local TeX Live year"; \
